@@ -4,13 +4,13 @@
     odom/sendTF: false
     #topic names 
     odom/lidar_topic: /livox/lidar_custom #/points_raw
-    odom/imu_topic: livox/imu_custom #/imu_correct
+    odom/imu_topic: /imu/data #/imu_correct
     odom/lidar_type: livox # livox velodyne ouster
 
     #frames
     odom/odom_frame: ig_odom
     odom/robot_frame: base_link
-    odom/imu_frame: livox_frame
+    odom/imu_frame: imu_link
     odom/lidar_frame: livox_frame
     odom/min_radius: 0.1
     odom/max_radius: 20.0
