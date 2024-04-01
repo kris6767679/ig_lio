@@ -59,6 +59,6 @@
                             0.0,  0.0, 1.0 ]
 
     #for map
-    map/save_map_path: /home/agilex/humble_ws #do not put / at the end of line
+    map/save_map_path: /home/agilex/humble_ws/src/3d_nav_kit/nav_common_pkg/map_handler/maps #do not put / at the end of line
     map/map_name: jfe
     map/map_frame: ig_odom
