@@ -8,7 +8,7 @@
     odom/lidar_type: velodyne # livox velodyne ouster
 
     #frames
-    odom/odom_frame: ig_odom
+    odom/odom_frame: ig_lio_odom
     odom/robot_frame: base_link
     odom/imu_frame: imu_link
     odom/lidar_frame: velodyne

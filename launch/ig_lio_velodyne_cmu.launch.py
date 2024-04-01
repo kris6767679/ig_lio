@@ -16,7 +16,7 @@ def generate_launch_description():
     ig_lio_dir = get_package_share_directory('ig_lio')
     
     # Define the path to your parameter file
-    param_path = os.path.join(ig_lio_dir, 'config', 'hesai.yaml')
+    param_path = os.path.join(ig_lio_dir, 'config', 'velodyne_cmu.yaml')
 
     return LaunchDescription([
         Node(
@@ -44,6 +44,6 @@ def generate_launch_description():
             package='tf2_ros',
             executable='static_transform_publisher',
             name='world_to_map',
-            arguments=['0', '0', '0', '0', '0', '0', '1', 'map', 'ig_odom']
+            arguments=['0', '0', '0', '0', '0', '0', '1', 'map', 'ig_lio_odom']
         )
     ])

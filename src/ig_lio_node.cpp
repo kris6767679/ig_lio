@@ -342,7 +342,7 @@ private:
 
 
     // Setup publishers
-    odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/lio_odom", 10);
+    odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("ig_lio/odometry", 10);
     current_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/current_scan", 10);
     keyframe_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/keyframe_scan", 10);
     keyframe_scan__5hz_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/keyframe_scan_5hz", 10);

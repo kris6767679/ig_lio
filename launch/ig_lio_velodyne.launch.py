@@ -16,7 +16,7 @@ def generate_launch_description():
     ig_lio_dir = get_package_share_directory('ig_lio')
     
     # Define the path to your parameter file
-    param_path = os.path.join(ig_lio_dir, 'config', 'velodyne_cmu.yaml')
+    param_path = os.path.join(ig_lio_dir, 'config', 'velodyne.yaml')
 
     return LaunchDescription([
         Node(
@@ -33,17 +33,17 @@ def generate_launch_description():
             output='screen',
             parameters=[param_path],  # Pass the parameter file path directly
         ),
-        Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz',
-            arguments=['-d', os.path.join(ig_lio_dir, 'rviz', 'lio_show.rviz')],
-            output='screen'
-        ),  
+        # Node(
+        #     package='rviz2',
+        #     executable='rviz2',
+        #     name='rviz',
+        #     arguments=['-d', os.path.join(ig_lio_dir, 'rviz', 'lio_show.rviz')],
+        #     output='screen'
+        # ),  
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='world_to_map',
-            arguments=['0', '0', '0', '0', '0', '0', '1', 'map', 'ig_odom']
+            arguments=['0', '0', '0', '0', '0', '0', '1', 'map', 'ig_lio_odom']
         )
     ])
