@@ -27,7 +27,7 @@ private:
     void getParams() {
         
         
-        this->declare_parameter<std::string>("map/map_location", "/");
+        this->declare_parameter<std::string>("map/map_location", "");
         this->get_parameter("map/map_location", this->map_location_);
         this->declare_parameter<std::string>("map/map_name", "ig_lio_map");
         this->get_parameter("map/map_name", this->map_name_);
