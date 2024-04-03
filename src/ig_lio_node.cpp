@@ -498,6 +498,9 @@ bool SyncMeasurements() {
   static size_t lidar_scan_num = 0;
 
   if (cloud_buff.empty() || imu_buff.empty()) {
+    if(debug_){
+      LOG(WARNING) << "either imu or cloud is empty" << std::endl;
+    }
     return false;
   }
 
@@ -506,6 +509,9 @@ bool SyncMeasurements() {
   double lidar_end_time = 0.0;
   if (!measurement_pushed) {
     if (!process_lidar) {
+      if(debug_){
+        LOG(INFO) << "Start processing lidar" << std::endl;
+      }
       CloudPtr cloud_sort(new CloudType());
       *cloud_sort = *cloud_buff.front().second;
       std::sort(cloud_sort->points.begin(),
@@ -555,6 +561,9 @@ bool SyncMeasurements() {
       }
 
       process_lidar = true;
+      if(debug_){
+        LOG(INFO) << "process lidar is done" << std::endl;
+      }
     }
 
     bool get_gnss_measurement = false;
@@ -635,6 +644,9 @@ bool SyncMeasurements() {
     if (sensor_measurement.measurement_type_ == MeasurementType::LIDAR) {
       cloud_buff.pop_front();
       process_lidar = false;
+      if(debug_){
+        LOG(INFO) << "Poping the cloud_buff" << std::endl;
+      } 
     } else if (sensor_measurement.measurement_type_ == MeasurementType::GNSS) {
       gnss_buff.pop_front();
     }
@@ -643,6 +655,15 @@ bool SyncMeasurements() {
   if (imu_buff.back().header.stamp.sec +
                   imu_buff.back().header.stamp.nanosec * 1e-9 <
       sensor_measurement.lidar_end_time_) {
+    if(debug_){
+      // Calculate the time difference
+      double imu_time = imu_buff.back().header.stamp.sec + imu_buff.back().header.stamp.nanosec * 1e-9;
+      double time_difference = sensor_measurement.lidar_end_time_ - imu_time; // This is how much the LIDAR end time is ahead of the IMU time
+
+      // Log the time difference
+      LOG(WARNING) << "this is the timer issue for lidar time and imu timer. Difference: " 
+                  << time_difference << " seconds." << std::endl;
+    }    
     return false;
   }
 
@@ -660,6 +681,9 @@ bool SyncMeasurements() {
   sensor_measurement.imu_buff_.push_back(imu_buff.front());
 
   measurement_pushed = false;
+    if(debug_){
+      LOG(INFO) << "Measurement is done" << std::endl;
+    }
   return true;
 }
 
@@ -667,6 +691,8 @@ bool SyncMeasurements() {
 void Process() {
   // Step 1: Time synchronization
   if (!SyncMeasurements()) {
+    if(debug_)
+      LOG(WARNING) << "failed to do SyncMeasurements" << std::endl;
     return;
   }
 

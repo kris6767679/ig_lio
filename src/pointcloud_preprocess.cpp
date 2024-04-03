@@ -206,7 +206,7 @@ void PointCloudPreprocess::ProcessHesai(
       point.intensity = cloud_origin.at(i).intensity;
       if (has_time_) {
         // curvature unit: ms
-        point.curvature = cloud_origin.at(i).timestamp * config_.time_scale;
+        point.curvature = cloud_origin.at(i).timestamp* 1e-9 * config_.time_scale;
         // std::cout<<point.curvature<<std::endl;
         // if(point.curvature < 0){
         //     std::cout<<"time < 0 : "<<point.curvature<<std::endl;
@@ -241,8 +241,10 @@ void PointCloudPreprocess::ProcessHesai(
         yaw_last[layer] = yaw_angle;
         time_last[layer] = point.curvature;
       }
-      if(InRadius(point))
+      if(InRadius(point)){
         cloud_out->push_back(point);
+      }
+        
     }
   }
 }

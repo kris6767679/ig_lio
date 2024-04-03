@@ -37,13 +37,13 @@ struct HesaiPointXYZIRT {
   PCL_ADD_POINT4D;
   PCL_ADD_INTENSITY
   uint16_t ring;
-  float timestamp;
+  double timestamp;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     HesaiPointXYZIRT,
     (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)(
-        uint16_t, ring, ring)(float, timestamp, timestamp))
+        uint16_t, ring, ring)(double, timestamp, timestamp))
 
 // for Ouster LiDAR
 struct OusterPointXYZIRT {

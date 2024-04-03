@@ -1,17 +1,17 @@
 /**:
   ros__parameters:
     #for odom
-
+    odom/debug: false
     #topic names 
     odom/lidar_topic: /points_raw
     odom/imu_topic: /imu/data #/imu_correct
-    odom/lidar_type: hesai # livox velodyne ouster
+    odom/lidar_type: hesai # livox velodyne ouster hesai
 
     #frames
-    odom/odom_frame: ig_odom
+    odom/odom_frame: lio_odom
     odom/robot_frame: base_link
     odom/imu_frame: imu_link
-    odom/lidar_frame: hesai
+    odom/lidar_frame: hesai_lidar
     odom/min_radius: 0.1
     odom/max_radius: 150.0
     odom/point_filter_num: 6
@@ -57,6 +57,6 @@
                             0.0,  0.0, 1.0 ]
 
     #for map
-    map/save_map_path: /home/agilex/humble_ws #do not put / at the end of line
-    map/map_name: ts_2nd
-    map/map_frame: ig_odom
+    # map/save_map_path: /home/agilex/humble_ws #do not put / at the end of line
+    # map/map_name: jfe
+    map/map_frame: lio_odom
