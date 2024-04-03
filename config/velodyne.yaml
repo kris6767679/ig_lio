@@ -62,3 +62,4 @@
     # map/save_map_path: /home/agilex/humble_ws #do not put / at the end of line
     # map/map_name: jfe
     map/map_frame: lio_odom
+
