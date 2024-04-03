@@ -76,9 +76,6 @@ public:
     // Start the loop in a separate thread
     processing_thread_ = std::thread(&IG_LIO_NODE::processingLoop, this);
       // Setup the wall timer
-    keyframe_timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(200), // 5Hz frequency
-      std::bind(&IG_LIO_NODE::keyframe_timerCallback, this));
   }
 
   ~IG_LIO_NODE() {
@@ -89,11 +86,6 @@ public:
   }
 
 private:
-
-  void keyframe_timerCallback(){
-    keyframe_scan__5hz_pub_->publish(keyframe_scan_5hz_msg);
-  }
-
 
   void processingLoop() {
       rclcpp::WallRate rate(std::chrono::microseconds(200));
@@ -342,11 +334,11 @@ private:
 
 
     // Setup publishers
-    odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("ig_lio/odometry", 10);
+    odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/lio/odometry", 10);
     current_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/current_scan", 10);
     keyframe_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/keyframe_scan", 10);
-    keyframe_scan__5hz_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/keyframe_scan_5hz", 10);
-    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/ig_lio/path", 10);
+    cloud_registered_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_registered", 10);
+    path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/lio/path", 10);
     LOG(INFO) << "Done setting pub/sub" << std::endl;
   }
 
@@ -798,6 +790,17 @@ void Process() {
   Eigen::Matrix4d delta_p = last_keyframe.inverse() * result_pose;
   // double norm_ = Sophus::SO3d(delta_p.block<3, 3>(0, 0)).log().norm();
   double norm_ = Sophus::SO3d(lio_ptr->correctRotationMatrix(delta_p.block<3, 3>(0, 0))).log().norm();
+  // // publish downsample scan for navigation
+  CloudPtr cloud_DS(new CloudType());
+  voxel_filter.setInputCloud(sensor_measurement.cloud_ptr_);
+  voxel_filter.filter(*cloud_DS);
+  CloudPtr trans_cloud_DS(new CloudType());
+  pcl::transformPointCloud(*cloud_DS, *trans_cloud_DS, result_pose);
+  sensor_msgs::msg::PointCloud2 cloud_registered_msg;
+  pcl::toROSMsg(*trans_cloud_DS, cloud_registered_msg);
+  cloud_registered_msg.header.frame_id = this->odom_frame;
+  cloud_registered_msg.header.stamp = scan_msg.header.stamp;
+  cloud_registered_pub_->publish(cloud_registered_msg);
   if (is_first_keyframe || delta_p.block<3, 1>(0, 3).norm() > 1.0 ||
       norm_ > 0.18) {
           if (debug_)
@@ -817,10 +820,8 @@ void Process() {
     pcl::transformPointCloud(*cloud_DS, *trans_cloud_DS, result_pose);
     sensor_msgs::msg::PointCloud2 keyframe_scan_msg;
     pcl::toROSMsg(*trans_cloud_DS, keyframe_scan_msg);
-    keyframe_scan_5hz_msg = keyframe_scan_msg;
     keyframe_scan_msg.header.frame_id = this->odom_frame;
     keyframe_scan_msg.header.stamp = scan_msg.header.stamp;
-    keyframe_scan_5hz_msg = keyframe_scan_msg;
     keyframe_scan_pub_->publish(keyframe_scan_msg);
     // publish path
     path_array.header.stamp = scan_msg.header.stamp;
@@ -922,12 +923,11 @@ void Process() {
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr current_scan_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_scan_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_scan__5hz_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_registered_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
 
   // TF Broadcaster
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-  sensor_msgs::msg::PointCloud2 keyframe_scan_5hz_msg;
   // Parameters
   std::string imu_topic;
   std::string lidar_topic;
@@ -986,7 +986,6 @@ void Process() {
   std::shared_ptr<PointCloudPreprocess> cloud_preprocess_ptr_;
   
   std::thread processing_thread_;
-  rclcpp::TimerBase::SharedPtr keyframe_timer_;
   struct Extrinsics {
     struct SE3 {
       Eigen::Vector3f t;
