@@ -32,6 +32,9 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/voxel_grid.h>
 
@@ -45,7 +48,7 @@ using std::placeholders::_1;
 
 class IG_LIO_NODE : public rclcpp::Node {
 public:
-  IG_LIO_NODE(std::string package_path) : Node("ig_lio_node"){
+  IG_LIO_NODE(std::string package_path) : Node("ig_lio_node"), tf_buffer_(this->get_clock()), tf_listener_(tf_buffer_){
     // Setup signal handler
     signal(SIGINT, IG_LIO_NODE::SigHandle);
     DeclareParams();
@@ -102,7 +105,7 @@ private:
 
   void DeclareParams(){
     // Initialize publishers, subscribers, parameters, etc.
-    this->declare_parameter<bool>("odom/sendTF", true);
+    this->declare_parameter<bool>("odom/sendTF", false);
     this->declare_parameter<std::string>("odom/imu_topic", "imu/data");
     this->declare_parameter<std::string>("odom/lidar_topic", "velodyne_points");
     this->declare_parameter<std::string>("odom/lidar_type", "velodyne");
@@ -338,6 +341,7 @@ private:
     current_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/current_scan", 10);
     keyframe_scan_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/keyframe_scan", 10);
     cloud_registered_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_registered", 10);
+    pubOdomToMap_ = this->create_publisher<nav_msgs::msg::Odometry>("/lio/odom_to_map", 20);
     path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/lio/path", 10);
     LOG(INFO) << "Done setting pub/sub" << std::endl;
   }
@@ -766,7 +770,7 @@ void Process() {
   odom_msg.pose.pose.position.y = result_pose(1, 3);
   odom_msg.pose.pose.position.z = result_pose(2, 3);
   odom_pub_->publish(odom_msg);
-
+  publish_odom_To_map(odom_msg);
   // transform: odom to robot_frame
   geometry_msgs::msg::TransformStamped transformStamped;
 
@@ -891,6 +895,29 @@ void Process() {
   }
 
 
+  void publish_odom_To_map(const nav_msgs::msg::Odometry& odom){
+      nav_msgs::msg::Odometry odom_transformed;
+      geometry_msgs::msg::TransformStamped transform_stamped;
+      geometry_msgs::msg::PoseStamped odom_pose;
+      odom_pose.pose = odom.pose.pose;
+      odom_pose.header = odom.header;
+      geometry_msgs::msg::PoseStamped map_pose;
+      try {
+          transform_stamped = tf_buffer_.lookupTransform(map_frame, odom_pose.header.frame_id,
+                                                      odom_pose.header.stamp, rclcpp::Duration::from_seconds(1.0));
+          tf2::doTransform(odom_pose, map_pose, transform_stamped);
+      } catch (tf2::TransformException &ex) {
+          // RCLCPP_WARN(this->get_logger(), "Could not transform cloud: %s", ex.what());
+          return;
+      }
+      // Set the header of the transformed odometry message
+      odom_transformed.header.stamp = odom.header.stamp;
+      odom_transformed.header.frame_id = map_frame;
+      odom_transformed.pose.pose = map_pose.pose;
+      pubOdomToMap_->publish(odom_transformed);
+  }
+
+
   void publishToRos(Eigen::Matrix4d& result_pose, Eigen::Quaterniond& temp_q, rclcpp::Time& current_time_stamp){
 
 
@@ -951,6 +978,7 @@ void Process() {
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr keyframe_scan_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_registered_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdomToMap_;
 
   // TF Broadcaster
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -1010,7 +1038,8 @@ void Process() {
   // LIO and other related objects
   std::shared_ptr<LIO> lio_ptr_;
   std::shared_ptr<PointCloudPreprocess> cloud_preprocess_ptr_;
-  
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
   std::thread processing_thread_;
   struct Extrinsics {
     struct SE3 {
@@ -1022,6 +1051,7 @@ void Process() {
     Eigen::Matrix4f robot2imu_T;
     Eigen::Matrix4f robot2lidar_T;
   }; Extrinsics extrinsics;
+
 };
 
 int main(int argc, char **argv) {
