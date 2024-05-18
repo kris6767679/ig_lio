@@ -16,7 +16,7 @@ public:
             "keyframe_scan", 10, std::bind(&IgLioMapNode::keyframeCallback, this, std::placeholders::_1));
         
         this->save_map_service_ = this->create_service<std_srvs::srv::Trigger>(
-            "save_map", std::bind(&IgLioMapNode::saveMapService, this, std::placeholders::_1, std::placeholders::_2));
+            "/lio/save_map", std::bind(&IgLioMapNode::saveMapService, this, std::placeholders::_1, std::placeholders::_2));
         
     this->world_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("world_map", 100);
 
@@ -55,7 +55,9 @@ private:
 
     void saveMapService(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                         std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
-        std::string file_path = this->map_location_ + "/" + this->map_name_+ ".pcd";
+        std::string save_dir = this->map_location_ + "/" + this->map_name_;
+        int unused = system((std::string("mkdir -p ") + save_dir).c_str());
+        std::string file_path = save_dir +  "/GlobalMap.pcd";
         if (pcl::io::savePCDFileBinary(file_path, *this->ig_lio_map) == 0) {
             response->success = true;
             response->message = "Map saved successfully to " + file_path;
