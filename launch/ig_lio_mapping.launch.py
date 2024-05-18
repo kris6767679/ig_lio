@@ -70,7 +70,7 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     package_path = get_package_share_directory('ig_lio')
     default_rviz_config_path = os.path.join(
-        package_path, 'rviz', 'fastlio.rviz')
+        package_path, 'rviz', 'lio_show.rviz')
     default_config_path = os.path.join(package_path, 'config')
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time', default_value='false',
